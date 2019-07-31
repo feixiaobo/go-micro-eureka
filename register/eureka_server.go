@@ -10,6 +10,7 @@ import (
 	"github.com/micro/go-micro/client/selector"
 	"github.com/micro/go-micro/registry"
 	"github.com/micro/go-micro/server"
+	"github.com/prometheus/common/log"
 	"net"
 	"time"
 )
@@ -22,24 +23,26 @@ func EurekaServer(opts ...option.Option) Server {
 	return newServer(opts...)
 }
 
+//func newServer(opts ...option.Option) Server {
+//	options := newOptions(opts...)
+//
+//	return Server{
+//		opts: options,
+//	}
+//}
+
 func newServer(opts ...option.Option) Server {
-	options := newOptions(opts...)
-
-	return Server{
-		opts: options,
-	}
-}
-
-func newOptions(opts ...option.Option) option.Options {
-	opt := option.Options{
-		Context:   context.Background(),
+	ser := &Server{
+		opts: option.Options{
+			Context: context.Background(),
+		},
 	}
 
 	for _, o := range opts {
-		o(&opt)
+		o(&ser.opts)
 	}
 
-	return opt
+	return *ser
 }
 
 func (s *Server) Start() {
@@ -50,7 +53,8 @@ func register(s *Server) {
 	opts := s.opts
 
 	if len(opts.RegistryAddress) == 0 {
-		panic("the register address is required")
+		log.Errorf("the register address is required")
+		panic("[error] the register address can't be null")
 	}
 	registerCenter := eureka.NewRegistry(
 		registry.Addrs(opts.RegistryAddress...),
@@ -58,22 +62,27 @@ func register(s *Server) {
 
 	name := opts.Name
 	if name == "" {
-		panic("the server name is required")
+		log.Errorf("the server name is required")
+		panic("[error] the server name can't be null")
 	}
 	ip := getLocalIP()
 	port := opts.Port
 	if port == 0 {
-		panic("the server port is required")
+		log.Errorf("the server port is required")
+		panic("[error] the server port can't be null")
 	}
 	ttl := opts.RegisterTTL
 	if ttl == time.Duration(0) {
-		ttl = time.Second*30
+		ttl = time.Second * 30
 	}
 
 	addr := fmt.Sprintf("%s:%d", ip, port)
 	instanceId := fmt.Sprintf("%s:%s:%d", ip, name, port)
 
 	metaMap := opts.Metadata
+	if metaMap == nil {
+		metaMap = make(map[string]string)
+	}
 	metaMap["instanceId"] = instanceId
 
 	ser := http.NewServer(

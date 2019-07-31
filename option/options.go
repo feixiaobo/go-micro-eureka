@@ -28,9 +28,9 @@ func Context(ctx context.Context) Option {
 }
 
 // eureka地址
-func RegistryAddress(addr... string) Option {
+func RegistryAddress(addr ...string) Option {
 	return func(o *Options) {
-		if len(addr) == 0 {
+		if len(addr) > 0 {
 			o.RegistryAddress = addr
 		}
 	}
