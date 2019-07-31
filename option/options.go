@@ -21,11 +21,11 @@ type Option func(option *Options)
 // Context specifies a context for the service.
 // Can be used to signal shutdown of the service.
 // Can be used for extra option values.
-//func Context(ctx context.Context) Option {
-//	return func(o *Options) {
-//		o.Context = ctx
-//	}
-//}
+func Context(ctx context.Context) Option {
+	return func(o *Options) {
+		o.Context = ctx
+	}
+}
 
 // eureka地址
 func RegistryAddress(addr... string) Option {

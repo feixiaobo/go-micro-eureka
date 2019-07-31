@@ -1,7 +1,9 @@
 package register
 
 import (
+	"context"
 	"fmt"
+	"github.com/feixiaobo/go-micro-eureka/option"
 	"github.com/feixiaobo/go-plugins/registry/eureka"
 	"github.com/feixiaobo/go-plugins/server/http"
 	"github.com/micro/go-micro"
@@ -13,42 +15,65 @@ import (
 )
 
 type Server struct {
-	opts Options
+	opts option.Options
 }
 
-func EurekaServer(opts ...Option) Server {
+func EurekaServer(opts ...option.Option) Server {
 	return newServer(opts...)
 }
 
-func newServer(opts ...Option) Server {
+func newServer(opts ...option.Option) Server {
 	options := newOptions(opts...)
 
-	options.Client = &clientWrapper{
-		options.Client,
-		metadata.Metadata{
-			HeaderPrefix + "From-Service": options.Server.Options().Name,
-		},
-	}
-
-	return &service{
+	return Server{
 		opts: options,
 	}
 }
 
-func Start()  {
-	go registry()
+func newOptions(opts ...option.Option) option.Options {
+	opt := option.Options{
+		Context:   context.Background(),
+	}
+
+	for _, o := range opts {
+		o(&opt)
+	}
+
+	return opt
 }
 
-func register() {
+func (s *Server) Start() {
+	go register(s)
+}
+
+func register(s *Server) {
+	opts := s.opts
+
+	if len(opts.RegistryAddress) == 0 {
+		panic("the register address is required")
+	}
 	registerCenter := eureka.NewRegistry(
-		registry.Addrs("http://localhost:8761/eureka"),
+		registry.Addrs(opts.RegistryAddress...),
 	)
 
+	name := opts.Name
+	if name == "" {
+		panic("the server name is required")
+	}
 	ip := getLocalIP()
-	addr := fmt.Sprintf("%s:%d", ip, 9101)
-	instanceId := fmt.Sprintf("%s:%s:%d", ip, "wemall", 9101)
+	port := opts.Port
+	if port == 0 {
+		panic("the server port is required")
+	}
+	ttl := opts.RegisterTTL
+	if ttl == time.Duration(0) {
+		ttl = time.Second*30
+	}
 
-	metaMap := make(map[string]string)
+	addr := fmt.Sprintf("%s:%d", ip, port)
+	instanceId := fmt.Sprintf("%s:%s:%d", ip, name, port)
+
+	metaMap := opts.Metadata
 	metaMap["instanceId"] = instanceId
 
 	ser := http.NewServer(
@@ -56,7 +81,7 @@ func register() {
 		server.Id(instanceId),
 		server.Registry(registerCenter),
 		server.Address(addr),
-		server.Name("wemall"),
+		server.Name(name),
 		server.Advertise(addr),
 	)
 
@@ -66,12 +91,12 @@ func register() {
 	)
 
 	service := micro.NewService(
-		micro.Name("wemall"),
+		micro.Name(name),
 		micro.Registry(registerCenter),
 		micro.Server(ser),
 		micro.Address(addr),
 		micro.Selector(selector),
-		micro.RegisterInterval(time.Second*30),
+		micro.RegisterInterval(ttl),
 	)
 
 	service.Init()
