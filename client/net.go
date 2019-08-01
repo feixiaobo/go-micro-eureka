@@ -12,14 +12,22 @@ import (
 
 var httpClient client.Client
 
-func Call(serviceName, path string, req interface{}, opts ...client.CallOption) (res interface{}, err error) {
+/**
+	type User struct {
+		Id           int32  `json:"id"`
+		UserName     string `json:"userName"`
+	}
+	req ex: &User{Id: 123, UserName: "飞晓波"}
+ 	res ex: new(User)
+*/
+func Call(serviceName, path string, req interface{}, res interface{}, opts ...client.CallOption) (err error) {
 	request := httpClient.NewRequest(serviceName, path, req)
 	err = httpClient.Call(context.Background(), request, res, opts...)
 	if err != nil {
 		log.Errorf("call server error", err)
-		return nil, err
+		return err
 	}
-	return res, err
+	return err
 }
 
 func InitClient(register *registry.Registry, s *selector.Selector, retries int) *client.Client {

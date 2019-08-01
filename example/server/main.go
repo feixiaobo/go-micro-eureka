@@ -12,5 +12,4 @@ func main() {
 		option.Port(9101),
 	)
 	server.Start()
-
 }
