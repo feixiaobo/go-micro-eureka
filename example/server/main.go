@@ -1,4 +1,4 @@
-package server
+package main
 
 import (
 	"github.com/feixiaobo/go-micro-eureka/option"
@@ -12,4 +12,5 @@ func main() {
 		option.Port(9101),
 	)
 	server.Start()
+
 }

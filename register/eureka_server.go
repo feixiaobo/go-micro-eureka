@@ -3,6 +3,7 @@ package register
 import (
 	"context"
 	"fmt"
+	"github.com/feixiaobo/go-micro-eureka/client"
 	"github.com/feixiaobo/go-micro-eureka/option"
 	"github.com/feixiaobo/go-plugins/registry/eureka"
 	"github.com/feixiaobo/go-plugins/server/http"
@@ -22,14 +23,6 @@ type Server struct {
 func EurekaServer(opts ...option.Option) Server {
 	return newServer(opts...)
 }
-
-//func newServer(opts ...option.Option) Server {
-//	options := newOptions(opts...)
-//
-//	return Server{
-//		opts: options,
-//	}
-//}
 
 func newServer(opts ...option.Option) Server {
 	ser := &Server{
@@ -99,12 +92,15 @@ func register(s *Server) {
 		selector.SetStrategy(selector.RoundRobin),
 	)
 
+	client := client.InitClient(&registerCenter, &selector, 3)
+
 	service := micro.NewService(
 		micro.Name(name),
 		micro.Registry(registerCenter),
 		micro.Server(ser),
 		micro.Address(addr),
 		micro.Selector(selector),
+		micro.Client(*client),
 		micro.RegisterInterval(ttl),
 	)
 
