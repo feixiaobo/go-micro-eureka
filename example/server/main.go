@@ -8,7 +8,7 @@ import (
 func main() {
 	server := register.EurekaServer(
 		option.RegistryAddress("http://localhost:8761/eureka"),
-		option.Name("wemall"),
+		option.Name("client"),
 		option.Port(9101),
 	)
 	server.Start()
